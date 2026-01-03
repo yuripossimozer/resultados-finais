@@ -314,7 +314,7 @@
         
         document.getElementById('areaNotas').innerHTML = '';
         const area = document.getElementById('resultadoArea');
-        area.innerHTML = '<div class="text-center p-5"><div class="spinner-border text-primary"></div><p class="mt-2 text-secondary text-uppercase">Buscando dados</p></div>';
+        area.innerHTML = '<div class="text-center p-5"><div class="spinner-border text-primary"></div><p class="mt-3 small fw-bold text-secondary text-uppercase">Buscando dados</p></div>';
 
         // CHAMADA API
         chamarAPI('getRelatorioCabecalho', { ano: ano, turma: turma, aluno: aluno })
