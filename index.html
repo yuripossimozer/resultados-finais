@@ -296,70 +296,63 @@
             <div class="d-flex justify-content-between align-items-start mb-4 border-bottom pb-3" style="border-color: var(--outline-variant) !important;">
               <div>
                 <h4 style="color: var(--primary); font-weight: 700;">${dados.aluno}</h4>
+                
                 <div class="d-flex flex-wrap gap-2 mt-2">
-                  <span class="badge-pill"><i class="fas fa-layer-group"></i> ${dados.oc}</span>
-                  <span class="badge-pill"><i class="fas fa-fingerprint"></i> ${dados.sistec}</span>
-                  <span class="badge-pill"><i class="fas fa-calendar-check"></i> ${dados.anosRegistrados}</span>
+                  <span class="badge-pill" title="Oferta Concomitante">
+                    <i class="fas fa-layer-group"></i> ${dados.oc}
+                  </span>
+                  <span class="badge-pill" title="Código SISTEC">
+                    <i class="fas fa-fingerprint"></i> ${dados.sistec}
+                  </span>
+                  <span class="badge-pill" title="Anos com Resultado Final">
+                    <i class="fas fa-calendar-check"></i> ${dados.anosRegistrados}
+                  </span>
                 </div>
+
               </div>
             </div>
 
             <div class="row g-4">
-              
               <div class="col-md-4">
-                <h6 class="text-secondary mb-3 text-uppercase small ls-1 fw-bold">Trajetória</h6>
+                <div class="d-flex align-items-center mb-3" style="height: 32px;">
+                   <h6 class="text-secondary mb-0 text-uppercase small ls-1 fw-bold">Trajetória</h6>
+                </div>
                 <div class="table-responsive">
                   <table class="table table-sm table-hover text-center">
                     <thead><tr><th>Ano</th><th>Turma</th></tr></thead>
-                    <tbody>${dados.trajetoria.map(t => `<tr><td>${t.ano}</td><td>${t.turma}</td></tr>`).join('')}</tbody>
+                    <tbody>
+                      ${dados.trajetoria.map(t => `<tr><td>${t.ano}</td><td>${t.turma}</td></tr>`).join('')}
+                    </tbody>
                   </table>
                 </div>
               </div>
 
               <div class="col-md-8">
-                 <div class="d-flex justify-content-between align-items-center mb-3">
+                 <div class="d-flex justify-content-between align-items-center mb-3" style="height: 32px;">
                     <h6 class="text-secondary mb-0 text-uppercase small ls-1 fw-bold">Situação Final</h6>
-                    <button onclick="window.copiarSituacao(this)" class="btn-action btn-sm"><i class="fas fa-copy"></i> Copiar</button>
+                    <button onclick="window.copiarSituacao(this)" class="btn-action btn-sm">
+                      <i class="fas fa-copy"></i> Copiar
+                    </button>
                  </div>
                  
                  <div class="table-responsive">
                   <table class="table table-sm table-hover text-center align-middle">
-                    <thead>
-                      <tr>
-                        <th>Ano</th><th>C.H.</th><th>Dias</th><th>Faltas</th><th>%</th><th>Res</th>
-                      </tr>
-                    </thead>
+                    <thead><tr><th>Ano</th><th>C.H.</th><th>Dias</th><th>Faltas</th><th>%</th><th>Res</th></tr></thead>
                     <tbody>
                       ${dados.trajetoria.map(t => {
                         if (t.existe) {
-                           // Caso o ano exista: mostra os dados reais
-                           return `<tr>
-                                     <td>${t.ano}</td>
-                                     <td>${t.ch}</td>
-                                     <td>${t.dias}</td>
-                                     <td>${t.faltas}</td>
-                                     <td>${t.porc}</td>
-                                     <td><span class="badge rounded-pill ${t.res==='AP'?'bg-success':'bg-secondary'}">${t.res}</span></td>
-                                   </tr>`;
+                           return `<tr><td><b>${t.ano}</b></td><td>${t.ch}</td><td>${t.dias}</td><td>${t.faltas}</td><td>${t.porc}</td><td><span class="badge rounded-pill ${t.res==='AP'?'bg-success':'bg-secondary'}">${t.res}</span></td></tr>`;
                         } else {
-                           // Caso NÃO exista: mostra traço em cada coluna individualmente (CORRIGIDO)
-                           return `<tr>
-                                     <td class="text-secondary">${t.ano}</td>
-                                     <td class="text-secondary">-</td>
-                                     <td class="text-secondary">-</td>
-                                     <td class="text-secondary">-</td>
-                                     <td class="text-secondary">-</td>
-                                     <td class="text-secondary">-</td>
-                                   </tr>`;
+                           return `<tr><td class="text-secondary">${t.ano}</td><td class="text-secondary">-</td><td class="text-secondary">-</td><td class="text-secondary">-</td><td class="text-secondary">-</td><td class="text-secondary">-</td></tr>`;
                         }
                       }).join('')}
                     </tbody>
                   </table>
                 </div>
               </div>
-              
-            </div> 
-            <div class="mt-4 p-3 rounded" style="background-color: var(--background); border: 1px solid var(--outline-variant);">
+            </div>
+            
+             <div class="mt-4 p-3 rounded" style="background-color: var(--background); border: 1px solid var(--outline-variant);">
               <small class="text-secondary fw-bold text-uppercase">Observações</small>
               <ul class="mb-0 ps-3 small mt-2" style="color: var(--text-secondary)">
                 ${dados.trajetoria.map(t => t.existe && t.obs ? `<li><strong>${t.ano}:</strong> ${t.obs}</li>` : '').join('')}
