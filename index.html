@@ -44,6 +44,11 @@
       .btn-icon { background: transparent; border: none; color: var(--text-secondary); font-size: 1.2rem; width: 40px; height: 40px; border-radius: 50%; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; }
       .btn-icon:hover { background-color: var(--primary-container); color: var(--on-primary-container); }
       .btn-action { background-color: var(--primary); color: var(--on-primary); border: none; border-radius: var(--radius-btn); padding: 0.5rem 1.2rem; font-weight: 500; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s ease; box-shadow: var(--shadow-sm); }
+            /* Adicione este bloco logo abaixo de .btn-action no seu CSS */
+      .btn-action.btn-sm {
+        padding: 0.25rem 0.8rem !important;
+        font-size: 0.75rem !important;
+      }
       .btn-action:hover { filter: brightness(1.1); transform: translateY(-1px); box-shadow: var(--shadow-md); }
       .btn-action.success-state { background-color: var(--success) !important; color: var(--on-success) !important; pointer-events: none; box-shadow: none; }
       .badge-pill { background-color: var(--primary-container); color: var(--on-primary-container); padding: 0.35em 1em; border-radius: 12px; font-size: 0.8rem; font-weight: 600; }
@@ -145,21 +150,32 @@
       // CONFIGURAÇÃO OBRIGATÓRIA DA API
       // Cole aqui a URL gerada no Apps Script (termina em /exec)
       // =========================================================
-      const API_URL = "https://script.google.com/macros/s/AKfycbwjuwuIUaREmo34IOVa4tOC1xiKwLw9ADwFQfsuoVsGUDR03eyRdTmwlWJqMH9lltJnYQ/exec"; 
+      const API_URL = "https://script.google.com/macros/s/AKfycbwjuwuIUaREmo34IOVa4tOC1xiKwLw9ADwFQfsuoVsGUDR03eyRdTmwlWJqMH9lltJnYQ/exec";
+      const API_TOKEN = "bLRp4yMQGLX7TGxGoERXWFlgE2JX4b6b"; // Tem que ser igual ao do GAS
 
       // --- ESTADO GLOBAL ---
       var DADOS_CACHE = {}; 
       var DADOS_RELATORIO_ATUAL = null; 
       var DADOS_NOTAS_ATUAL = null;     
 
-      // --- [NOVO] FUNÇÃO CONECTORA (Substitui o google.script.run) ---
+      // --- FUNÇÃO CONECTORA BLINDADA ---
       async function chamarAPI(action, payload = {}) {
-        const bodyData = { action: action, ...payload };
+        // Injeta o Token e a Ação no pacote
+        const bodyData = { 
+          token: API_TOKEN,
+          action: action, 
+          ...payload 
+        };
         
+        // O PULO DO GATO DO CORS:
+        // Usamos 'text/plain;charset=utf-8' para garantir que o navegador
+        // NÃO envie uma requisição OPTIONS (Preflight), que o GAS não suporta.
         const response = await fetch(API_URL, {
           method: "POST",
+          headers: {
+            "Content-Type": "text/plain;charset=utf-8" 
+          },
           body: JSON.stringify(bodyData)
-          // Não definimos headers para evitar Preflight CORS options
         });
         
         const json = await response.json();
@@ -298,7 +314,7 @@
         
         document.getElementById('areaNotas').innerHTML = '';
         const area = document.getElementById('resultadoArea');
-        area.innerHTML = '<div class="text-center p-5"><div class="spinner-border text-primary"></div><p class="mt-2 text-secondary text-uppercase">Buscando dados</p></div>';
+        area.innerHTML = '<div class="text-center p-5"><div class="spinner-border text-primary"></div><p class="mt-3 small fw-bold text-secondary text-uppercase">Buscando dados</p></div>';
 
         // CHAMADA API
         chamarAPI('getRelatorioCabecalho', { ano: ano, turma: turma, aluno: aluno })
@@ -308,12 +324,15 @@
 
       window.exibirCabecalho = function(dados) {
         DADOS_RELATORIO_ATUAL = dados;
+
+        // 1. VERIFICAÇÃO: Existe alguma observação válida?
+        const temObs = dados.trajetoria.some(t => t.existe && t.obs && String(t.obs).trim() !== "");
         
         let html = `
           <div class="m-card">
             <div class="d-flex justify-content-between align-items-start mb-4 border-bottom pb-3" style="border-color: var(--outline-variant) !important;">
               <div>
-                <h4 style="color: var(--text-secondary); font-weight: 700;">${dados.aluno}</h4>
+                <h4 class="mb-3" style="color: var(--text-secondary); font-weight: 700; font-size: 1.25rem;">${dados.aluno}</h4>
                 
                 <div class="d-flex flex-wrap gap-2 mt-2">
                   <span class="meta-tag" title="Oferta Concomitante">
@@ -370,8 +389,16 @@
               </div>
             </div>
             
-             <div class="mt-4 p-3 rounded" style="background-color: var(--background); border: 1px solid var(--outline-variant);">
-              <small class="text-secondary fw-bold text-uppercase">Observações</small>
+           <div class="mt-4 p-3 rounded" style="background-color: var(--background); border: 1px solid var(--outline-variant);">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <small class="text-secondary fw-bold text-uppercase">Observações</small>
+                
+                ${ temObs ? `
+                <button onclick="window.copiarObservacoes(this)" class="btn-action btn-sm">
+                   <i class="fas fa-copy"></i> Copiar
+                </button>` : '' }
+
+              </div>
               <ul class="mb-0 ps-3 small mt-2" style="color: var(--text-secondary)">
                 ${dados.trajetoria.map(t => t.existe && t.obs ? `<li><strong>${t.ano}:</strong> ${t.obs}</li>` : '').join('')}
               </ul>
@@ -385,7 +412,7 @@
 
       window.carregarTabelaNotas = function(aluno, oc, trajetoria) {
         const divNotas = document.getElementById('areaNotas');
-        divNotas.innerHTML = '<div class="text-center mt-4"><div class="spinner-grow text-primary spinner-grow-sm"></div><span class="ms-2 text-secondary text-uppercase">Carregando notas</span></div>';
+        divNotas.innerHTML = '<div class="text-center mt-4"><div class="spinner-grow text-primary spinner-grow-sm"></div><span class="ms-3 small fw-bold text-secondary text-uppercase">Carregando notas</span></div>';
 
         // CHAMADA API
         chamarAPI('getTabelaNotas', { aluno: aluno, oc: oc, trajetoria: trajetoria })
@@ -461,6 +488,32 @@
         let texto = linhaCH + "\n" + linhaDias + "\n" + linhaFaltas + "\n" + linhaPorc + "\n" + linhaRes;
         window.executarCopiaReal(texto, btnElement);
       };
+      
+      // --- FUNÇÃO DE COPIAR OBSERVAÇÕES (ATUALIZADA) ---
+      window.copiarObservacoes = function(btnElement) {
+        if (!DADOS_RELATORIO_ATUAL) return;
+
+        // Filtra apenas anos que existem e têm observação preenchida
+        const listaObs = DADOS_RELATORIO_ATUAL.trajetoria
+          .filter(t => t.existe && t.obs && String(t.obs).trim() !== "")
+          .map(t => {
+            // ALTERAÇÃO: Retorna apenas o texto da observação.
+            // O ano foi removido.
+            return t.obs;
+          });
+
+        if (listaObs.length === 0) {
+          alert("Não há observações para copiar.");
+          return;
+        }
+
+        // Junta tudo com uma quebra de linha (\n)
+        // Isso preserva as quebras internas e adiciona uma quebra entre os anos
+        const textoFinal = listaObs.join("\n");
+
+        window.executarCopiaReal(textoFinal, btnElement);
+      };
+      
       window.executarCopiaReal = function(texto, btn) {
         const textarea = document.createElement('textarea');
         textarea.value = texto;
