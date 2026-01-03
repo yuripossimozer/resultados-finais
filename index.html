@@ -412,7 +412,7 @@
 
       window.carregarTabelaNotas = function(aluno, oc, trajetoria) {
         const divNotas = document.getElementById('areaNotas');
-        divNotas.innerHTML = '<div class="text-center mt-4"><div class="spinner-grow text-primary spinner-grow-sm"></div><span class="mt-3 small fw-bold text-secondary text-uppercase">Carregando notas</span></div>';
+        divNotas.innerHTML = '<div class="text-center mt-4"><div class="spinner-grow text-primary spinner-grow-sm"></div><span class="mt-3 small fw-bold text-secondary text-uppercase">  Carregando notas</span></div>';
 
         // CHAMADA API
         chamarAPI('getTabelaNotas', { aluno: aluno, oc: oc, trajetoria: trajetoria })
