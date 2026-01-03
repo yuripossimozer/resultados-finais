@@ -51,13 +51,31 @@
       .modal-header, .modal-footer { border-color: var(--outline-variant); }
       .btn-close { filter: invert(0.5); } [data-theme="dark"] .btn-close { filter: invert(1); }
       .table-responsive { overflow-x: auto; margin-bottom: 1rem; scrollbar-width: thin; scrollbar-color: var(--outline) transparent; }
+
+      .meta-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 12px;
+        border-radius: 8px; /* Canto menos arredondado, mais técnico */
+        border: 1px solid var(--outline-variant);
+        color: var(--text-secondary);
+        font-size: 0.8rem;
+        font-weight: 500;
+        background-color: transparent; /* Remove o fundo colorido */
+      }
+      
+      .meta-tag i {
+        color: var(--primary); /* O ícone mantém a cor da marca, sutilmente */
+        font-size: 0.9rem;
+      }
     </style>
   </head>
   <body>
     
     <div id="overlay-loading">
       <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;"></div>
-      <p class="mt-3 small fw-bold" style="color: var(--text-secondary); letter-spacing: 1px;">CONECTANDO AO GOOGLE</p>
+      <p class="mt-3 small fw-bold" style="color: var(--text-secondary); letter-spacing: 1px;">CONECTANDO</p>
     </div>
 
     <div class="container">
@@ -280,7 +298,7 @@
         
         document.getElementById('areaNotas').innerHTML = '';
         const area = document.getElementById('resultadoArea');
-        area.innerHTML = '<div class="text-center p-5"><div class="spinner-border text-primary"></div><p class="mt-2 text-secondary">Buscando dados</p></div>';
+        area.innerHTML = '<div class="text-center p-5"><div class="spinner-border text-primary"></div><p class="mt-2 text-secondary text-uppercase">Buscando dados</p></div>';
 
         // CHAMADA API
         chamarAPI('getRelatorioCabecalho', { ano: ano, turma: turma, aluno: aluno })
@@ -295,16 +313,16 @@
           <div class="m-card">
             <div class="d-flex justify-content-between align-items-start mb-4 border-bottom pb-3" style="border-color: var(--outline-variant) !important;">
               <div>
-                <h4 style="color: var(--primary); font-weight: 700;">${dados.aluno}</h4>
+                <h4 style="color: var(--text-secondary); font-weight: 700;">${dados.aluno}</h4>
                 
                 <div class="d-flex flex-wrap gap-2 mt-2">
-                  <span class="badge-pill" title="Oferta Concomitante">
+                  <span class="meta-tag" title="Oferta Concomitante">
                     <i class="fas fa-layer-group"></i> ${dados.oc}
                   </span>
-                  <span class="badge-pill" title="Código SISTEC">
+                  <span class="meta-tag" title="Código SISTEC">
                     <i class="fas fa-fingerprint"></i> ${dados.sistec}
                   </span>
-                  <span class="badge-pill" title="Anos com Resultado Final">
+                  <span class="meta-tag" title="Anos com Resultado Final">
                     <i class="fas fa-calendar-check"></i> ${dados.anosRegistrados}
                   </span>
                 </div>
@@ -367,7 +385,7 @@
 
       window.carregarTabelaNotas = function(aluno, oc, trajetoria) {
         const divNotas = document.getElementById('areaNotas');
-        divNotas.innerHTML = '<div class="text-center mt-4"><div class="spinner-grow text-primary spinner-grow-sm"></div><span class="ms-2 text-secondary">Carregando notas</span></div>';
+        divNotas.innerHTML = '<div class="text-center mt-4"><div class="spinner-grow text-primary spinner-grow-sm"></div><span class="ms-2 text-secondary text-uppercase">Carregando notas</span></div>';
 
         // CHAMADA API
         chamarAPI('getTabelaNotas', { aluno: aluno, oc: oc, trajetoria: trajetoria })
