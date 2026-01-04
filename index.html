@@ -8,8 +8,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
 
     <style>
+      /* --- VARIÁVEIS DE TEMA --- */
       :root {
         --primary: #005fa4; --on-primary: #ffffff; --primary-container: #d5e3ff; --on-primary-container: #001b3c;
         --success: #146c2e; --on-success: #ffffff; --background: #fdfcff; --surface: #fdfcff; --surface-container: #f0f4f9;
@@ -26,64 +29,82 @@
         --bg-header: #2a2d31; --table-stripe: rgba(168, 199, 250, 0.05);
         --shadow-sm: 0 1px 3px rgba(0,0,0,0.5); --shadow-md: 0 4px 15px rgba(0,0,0,0.5);
       }
+
+      /* --- RESET & ESTRUTURA --- */
       html, body { width: 100%; min-height: 100vh; margin: 0; padding: 0; overflow-x: hidden; }
       body { background-color: var(--background); color: var(--text-main); font-family: 'Roboto', sans-serif; transition: background-color 0.3s ease, color 0.3s ease; padding-bottom: 60px; -webkit-font-smoothing: antialiased; }
+      
+      /* --- COMPONENTES UI --- */
       #overlay-loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--background); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+      
       .app-bar { background-color: var(--surface-container); padding: 1rem 1.5rem; border-radius: 0 0 var(--radius-card) var(--radius-card); display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; border: 1px solid var(--outline-variant); border-top: none; }
       .app-title { font-weight: 700; color: var(--primary); font-size: 1.25rem; }
+      
       .m-card { background-color: var(--surface-container); border-radius: var(--radius-card); padding: 1.5rem; border: 1px solid var(--outline-variant); margin-bottom: 1.5rem; }
+
+      /* --- TABELAS --- */
       .table > tbody > tr > td { background-color: transparent !important; color: var(--text-main) !important; border-color: var(--outline-variant) !important; vertical-align: middle; }
       .table thead th { background-color: var(--bg-header) !important; color: var(--text-secondary) !important; border-bottom: 1px solid var(--outline-variant); border-color: var(--outline-variant) !important; font-weight: 600; text-transform: uppercase; font-size: 0.75rem; white-space: nowrap; padding: 12px; }
       .table-striped > tbody > tr:nth-of-type(odd) > td { background-color: var(--table-stripe) !important; box-shadow: inset 0 0 0 9999px var(--table-stripe) !important; }
       .table-hover tbody tr:hover td { background-color: var(--primary-container) !important; color: var(--on-primary-container) !important; box-shadow: inset 0 0 0 9999px var(--primary-container) !important; }
       .table-hover tbody tr:hover td .text-secondary { color: var(--on-primary-container) !important; opacity: 0.8; }
+      .table-responsive { overflow-x: auto; margin-bottom: 1rem; scrollbar-width: thin; scrollbar-color: var(--outline) transparent; }
+
+      /* --- FORMULÁRIOS & BOTÕES --- */
       .form-label { font-size: 0.85rem; color: var(--text-secondary); font-weight: 500; margin-bottom: 6px; margin-left: 4px; }
       .form-select { background-color: var(--background); border: 1px solid var(--outline); color: var(--text-main); border-radius: 12px; padding: 0.75rem 1rem; transition: border-color 0.2s, box-shadow 0.2s; }
       .form-select:disabled { background-color: var(--outline-variant); opacity: 0.4; border-color: transparent; }
       .form-select:focus { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-container); outline: none; }
+      
       .btn-icon { background: transparent; border: none; color: var(--text-secondary); font-size: 1.2rem; width: 40px; height: 40px; border-radius: 50%; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; }
       .btn-icon:hover { background-color: var(--primary-container); color: var(--on-primary-container); }
+      
       .btn-action { background-color: var(--primary); color: var(--on-primary); border: none; border-radius: var(--radius-btn); padding: 0.5rem 1.2rem; font-weight: 500; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s ease; box-shadow: var(--shadow-sm); }
-            /* Adicione este bloco logo abaixo de .btn-action no seu CSS */
-      .btn-action.btn-sm {
-        padding: 0.25rem 0.8rem !important;
-        font-size: 0.75rem !important;
-      }
+      .btn-action.btn-sm { padding: 0.25rem 0.8rem !important; font-size: 0.75rem !important; }
       .btn-action:hover { filter: brightness(1.1); transform: translateY(-1px); box-shadow: var(--shadow-md); }
       .btn-action.success-state { background-color: var(--success) !important; color: var(--on-success) !important; pointer-events: none; box-shadow: none; }
+      
+      /* --- ELEMENTOS DE TEXTO --- */
       .badge-pill { background-color: var(--primary-container); color: var(--on-primary-container); padding: 0.35em 1em; border-radius: 12px; font-size: 0.8rem; font-weight: 600; }
+      
+      .meta-tag { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 8px; border: 1px solid var(--outline-variant); color: var(--text-secondary); font-size: 0.8rem; font-weight: 500; background-color: transparent; }
+      .meta-tag i { color: var(--primary); font-size: 0.9rem; }
+
+      /* --- MODAL --- */
       .modal-content { background-color: var(--surface-container); color: var(--text-main); border: 1px solid var(--outline-variant); border-radius: var(--radius-card); }
       .modal-header, .modal-footer { border-color: var(--outline-variant); }
       .btn-close { filter: invert(0.5); } [data-theme="dark"] .btn-close { filter: invert(1); }
-      .table-responsive { overflow-x: auto; margin-bottom: 1rem; scrollbar-width: thin; scrollbar-color: var(--outline) transparent; }
 
-      .meta-tag {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 4px 12px;
-        border-radius: 8px; /* Canto menos arredondado, mais técnico */
-        border: 1px solid var(--outline-variant);
-        color: var(--text-secondary);
-        font-size: 0.8rem;
-        font-weight: 500;
-        background-color: transparent; /* Remove o fundo colorido */
-      }
-      
-      .meta-tag i {
-        color: var(--primary); /* O ícone mantém a cor da marca, sutilmente */
-        font-size: 0.9rem;
-      }
+      /* --- CLASSE UTILITÁRIA DE CABEÇALHO (Para uso futuro) --- */
+      .header-style { background-color: var(--bg-header); color: var(--text-secondary); font-family: 'Roboto', sans-serif; font-weight: 600; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; border-bottom: 1px solid var(--outline-variant); padding: 12px; display: block; border-radius: 4px; }
     </style>
   </head>
   <body>
     
-    <div id="overlay-loading">
+    <div id="login-screen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: var(--background); z-index: 10000; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+      <div class="m-card text-center p-5" style="border: 1px solid var(--outline-variant);">
+        <i class="fas fa-graduation-cap fa-3x mb-3" style="color: var(--primary)"></i>
+        <h4 class="mb-4">Acesso Restrito</h4>
+        <p class="text-secondary mb-4 small">Faça login com sua conta institucional<br>para acessar o sistema.</p>
+        
+        <div id="g_id_onload"
+             data-client_id="10938455862-2def58pdbq68jn5encbplrfl5nhcndpl.apps.googleusercontent.com"
+             data-callback="handleCredentialResponse"
+             data-auto_select="false"
+             data-itp_support="true">
+        </div>
+        <div class="g_id_signin" data-type="standard" data-shape="pill" data-theme="outline" data-text="signin_with" data-size="large" data-logo_alignment="left"></div>
+        <div id="login-error" class="mt-3 text-danger small fw-bold"></div>
+      </div>
+    </div>
+
+    <div id="overlay-loading" style="display: none;">
       <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;"></div>
       <p class="mt-3 small fw-bold" style="color: var(--text-secondary); letter-spacing: 1px;">CONECTANDO</p>
     </div>
 
-    <div class="container">
+    <div class="container" id="app-container" style="display: none;">
+      
       <div class="app-bar">
         <div class="d-flex align-items-center gap-2">
           <i class="fas fa-graduation-cap fa-lg" style="color: var(--primary)"></i>
@@ -96,7 +117,7 @@
       </div>
 
       <div class="m-card">
-        <h5 class="mb-3" style="color: var(--primary); font-weight: 700;">FILTROS DE BUSCA</h5>
+        <h5 class="mb-3" style="color: var(--primary); font-weight: 700; font-size: 1.25rem;">FILTROS DE BUSCA</h5>
         <div class="row g-3">
           <div class="col-md-3">
             <label class="form-label">Ano Letivo</label>
@@ -120,24 +141,27 @@
     <div class="modal fade" id="modalConfig" tabindex="-1">
       <div class="modal-dialog mt-5">
         <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">Configurar Tabulação</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
+          <div class="modal-header"><h5 class="modal-title">Configurações</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
           <div class="modal-body">
-            <p class="small text-secondary">Ajuste as células mescladas para cópia no Excel.</p>
-            <div class="mb-3">
-              <label class="form-label">Módulo Aproveitamento</label>
-              <input type="number" id="cfgNotas" class="form-control" min="1">
+            
+            <h6 class="text-secondary small fw-bold text-uppercase mb-3">Exportação</h6>
+            <div class="mb-3"><label class="form-label">Tabulação Aproveitamento</label><input type="number" id="cfgNotas" class="form-control" min="1"></div>
+            <div class="mb-3"><label class="form-label">Tabulação Situação Final</label><input type="number" id="cfgSituacao" class="form-control" min="1"></div>
+            <div class="d-flex gap-2 mb-4">
+               <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill" onclick="window.resetarConfig()">Padrão</button>
+               <button type="button" class="btn btn-action btn-sm" onclick="window.salvarConfig()" data-bs-dismiss="modal">Salvar</button>
             </div>
-            <div class="mb-3">
-              <label class="form-label">Módulo Situação Final</label>
-              <input type="number" id="cfgSituacao" class="form-control" min="1">
+            
+            <hr class="my-4" style="border-color: var(--outline-variant);">
+            
+            <h6 class="text-secondary small fw-bold text-uppercase mb-3">Conta</h6>
+            <div class="p-3 rounded d-flex align-items-center justify-content-between" style="background-color: var(--background); border: 1px solid var(--outline-variant);">
+               <div class="d-flex align-items-center gap-3">
+                  <div class="d-flex align-items-center justify-content-center rounded-circle" style="width: 40px; height: 40px; background-color: var(--primary-container); color: var(--on-primary-container);"><i class="fas fa-user"></i></div>
+                  <div style="line-height: 1.2;"><span class="d-block small text-secondary">Logado como</span><span id="lblUserEmail" class="fw-bold" style="font-size: 0.9rem;">...</span></div>
+               </div>
+               <button onclick="window.fazerLogout()" class="btn btn-sm btn-outline-danger rounded-pill px-3" data-bs-dismiss="modal">Sair</button>
             </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-outline-secondary btn-sm me-auto rounded-pill" onclick="window.resetarConfig()">Padrão</button>
-            <button type="button" class="btn btn-action" onclick="window.salvarConfig()" data-bs-dismiss="modal">Salvar</button>
           </div>
         </div>
       </div>
@@ -147,46 +171,113 @@
 
     <script>
       // =========================================================
-      // CONFIGURAÇÃO OBRIGATÓRIA DA API
-      // Cole aqui a URL gerada no Apps Script (termina em /exec)
+      // 1. CONFIGURAÇÃO DA API
       // =========================================================
       const API_URL = "https://script.google.com/macros/s/AKfycbwjuwuIUaREmo34IOVa4tOC1xiKwLw9ADwFQfsuoVsGUDR03eyRdTmwlWJqMH9lltJnYQ/exec";
-      const API_TOKEN = "bLRp4yMQGLX7TGxGoERXWFlgE2JX4b6b"; // Tem que ser igual ao do GAS
-
-      // --- ESTADO GLOBAL ---
+      
+      // ESTADO GLOBAL
+      var USER_TOKEN = null;
       var DADOS_CACHE = {}; 
       var DADOS_RELATORIO_ATUAL = null; 
       var DADOS_NOTAS_ATUAL = null;     
 
-      // --- FUNÇÃO CONECTORA BLINDADA ---
+      // =========================================================
+      // 2. AUTENTICAÇÃO E SEGURANÇA
+      // =========================================================
+      
+      // Callback do Google após Login com sucesso
+      function handleCredentialResponse(response) {
+        USER_TOKEN = response.credential;
+        
+        // Exibe email no modal
+        const dadosUser = parseJwt(USER_TOKEN);
+        if (dadosUser && dadosUser.email) {
+          document.getElementById('lblUserEmail').innerText = dadosUser.email;
+        }
+
+        // Troca UI
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('overlay-loading').style.display = 'flex';
+        
+        // Carrega Dados Iniciais
+        chamarAPI('getHierarquiaDados')
+          .then(dados => {
+            window.inicializarApp(dados);
+            document.getElementById('overlay-loading').style.display = 'none';
+            document.getElementById('app-container').style.display = 'block';
+          })
+          .catch(e => {
+            document.getElementById('overlay-loading').style.display = 'none';
+            document.getElementById('login-screen').style.display = 'flex';
+            document.getElementById('login-error').innerText = e.message; 
+            USER_TOKEN = null;
+          });
+      }
+
+      // Função de Logout
+      window.fazerLogout = function() {
+        USER_TOKEN = null;
+        DADOS_CACHE = {}; DADOS_RELATORIO_ATUAL = null; DADOS_NOTAS_ATUAL = null;
+        
+        // Limpa UI
+        document.getElementById('resultadoArea').innerHTML = '';
+        document.getElementById('areaNotas').innerHTML = '';
+        document.getElementById('selAno').innerHTML = '<option value="" selected disabled>Carregando...</option>';
+        document.getElementById('selTurma').disabled = true;
+        document.getElementById('selAluno').disabled = true;
+
+        // Troca Telas
+        document.getElementById('app-container').style.display = 'none';
+        document.getElementById('login-screen').style.display = 'flex';
+        
+        // Reseta Google
+        if (window.google) google.accounts.id.disableAutoSelect();
+      };
+
+      // Decodifica JWT
+      function parseJwt(token) {
+        try { return JSON.parse(decodeURIComponent(window.atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''))); } catch (e) { return null; }
+      }
+
+      // Conector API Blindado (Envia Token Google)
       async function chamarAPI(action, payload = {}) {
-        // Injeta o Token e a Ação no pacote
         const bodyData = { 
-          token: API_TOKEN,
+          userToken: USER_TOKEN, 
           action: action, 
           ...payload 
         };
         
-        // O PULO DO GATO DO CORS:
-        // Usamos 'text/plain;charset=utf-8' para garantir que o navegador
-        // NÃO envie uma requisição OPTIONS (Preflight), que o GAS não suporta.
         const response = await fetch(API_URL, {
           method: "POST",
-          headers: {
-            "Content-Type": "text/plain;charset=utf-8" 
-          },
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify(bodyData)
         });
         
         const json = await response.json();
-        
-        if (json.error) {
-          throw new Error(json.error);
-        }
+        if (json.error) throw new Error(json.error);
         return json;
       }
 
-      // --- TEMA ---
+      // =========================================================
+      // 3. INICIALIZAÇÃO
+      // =========================================================
+      window.onload = function() {
+        try {
+          const savedTheme = localStorage.getItem('theme');
+          const icon = document.getElementById('icon-theme');
+          if (savedTheme === 'dark') {
+            document.body.setAttribute('data-theme', 'dark');
+            if(icon) icon.classList.replace('fa-moon', 'fa-sun');
+          }
+          window.carregarConfig();
+        } catch(e) {}
+        
+        // NÃO chamamos mais dados aqui. O Login dispara o carregamento.
+      };
+
+      // =========================================================
+      // 4. CONFIGURAÇÕES & TEMA
+      // =========================================================
       window.toggleTheme = function() {
         const body = document.body;
         const icon = document.getElementById('icon-theme');
@@ -202,25 +293,6 @@
         }
       };
 
-      // --- INICIALIZAÇÃO ---
-      window.onload = function() {
-        try {
-          const savedTheme = localStorage.getItem('theme');
-          const icon = document.getElementById('icon-theme');
-          if (savedTheme === 'dark') {
-            document.body.setAttribute('data-theme', 'dark');
-            if(icon) icon.classList.replace('fa-moon', 'fa-sun');
-          }
-          window.carregarConfig();
-        } catch(e) {}
-
-        // CHAMADA API ADAPTADA
-        chamarAPI('getHierarquiaDados')
-          .then(dados => window.inicializarApp(dados))
-          .catch(e => window.erroLoad(e));
-      };
-
-      // --- CONFIGURAÇÕES ---
       window.carregarConfig = function() {
         try {
           const raw = localStorage.getItem('appEscolarConfig');
@@ -246,7 +318,9 @@
         window.salvarConfig();
       };
 
-      // --- LÓGICA DE INTERFACE ---
+      // =========================================================
+      // 5. INTERFACE DO USUÁRIO (HANDLERS)
+      // =========================================================
       window.limparTela = function() {
         document.getElementById('resultadoArea').innerHTML = '';
         document.getElementById('areaNotas').innerHTML = '';
@@ -263,15 +337,8 @@
           let opt = document.createElement('option');
           opt.value = ano; opt.text = ano; selAno.appendChild(opt);
         });
-        const loader = document.getElementById('overlay-loading');
-        if(loader) loader.style.display = 'none';
       };
 
-      window.erroLoad = function(e) { 
-        document.getElementById('overlay-loading').innerHTML = `<div class="alert alert-danger p-4">Erro de Conexão: ${e.message}</div>`;
-      };
-
-      // --- HANDLERS (CASCATA) ---
       window.aoMudarAno = function() {
         window.limparTela();
         const ano = document.getElementById('selAno').value;
@@ -306,7 +373,6 @@
         selAluno.disabled = false;
       };
 
-      // --- BUSCA E RENDERIZAÇÃO (ADAPTADO PARA API) ---
       window.buscarRelatorio = function() {
         const ano = document.getElementById('selAno').value;
         const turma = document.getElementById('selTurma').value;
@@ -316,16 +382,16 @@
         const area = document.getElementById('resultadoArea');
         area.innerHTML = '<div class="text-center p-5"><div class="spinner-border text-primary"></div><p class="mt-3 small fw-bold text-secondary text-uppercase">Buscando dados</p></div>';
 
-        // CHAMADA API
         chamarAPI('getRelatorioCabecalho', { ano: ano, turma: turma, aluno: aluno })
           .then(dados => window.exibirCabecalho(dados))
           .catch(e => area.innerHTML = `<div class="alert alert-danger">Erro: ${e.message}</div>`);
       };
 
+      // =========================================================
+      // 6. RENDERIZAÇÃO
+      // =========================================================
       window.exibirCabecalho = function(dados) {
         DADOS_RELATORIO_ATUAL = dados;
-
-        // 1. VERIFICAÇÃO: Existe alguma observação válida?
         const temObs = dados.trajetoria.some(t => t.existe && t.obs && String(t.obs).trim() !== "");
         
         let html = `
@@ -333,33 +399,21 @@
             <div class="d-flex justify-content-between align-items-start mb-4 border-bottom pb-3" style="border-color: var(--outline-variant) !important;">
               <div>
                 <h4 class="mb-3" style="color: var(--text-secondary); font-weight: 700; font-size: 1.25rem;">${dados.aluno}</h4>
-                
                 <div class="d-flex flex-wrap gap-2 mt-2">
-                  <span class="meta-tag" title="Oferta Concomitante">
-                    <i class="fas fa-layer-group"></i> ${dados.oc}
-                  </span>
-                  <span class="meta-tag" title="Código SISTEC">
-                    <i class="fas fa-fingerprint"></i> ${dados.sistec}
-                  </span>
-                  <span class="meta-tag" title="Anos com Resultado Final">
-                    <i class="fas fa-calendar-check"></i> ${dados.anosRegistrados}
-                  </span>
+                  <span class="meta-tag" title="Oferta Concomitante"><i class="fas fa-layer-group"></i> ${dados.oc}</span>
+                  <span class="meta-tag" title="Código SISTEC"><i class="fas fa-fingerprint"></i> ${dados.sistec}</span>
+                  <span class="meta-tag" title="Anos com Resultado Final"><i class="fas fa-calendar-check"></i> ${dados.anosRegistrados}</span>
                 </div>
-
               </div>
             </div>
 
             <div class="row g-4">
               <div class="col-md-4">
-                <div class="d-flex align-items-center mb-3" style="height: 32px;">
-                   <h6 class="text-secondary mb-0 text-uppercase small ls-1 fw-bold">Trajetória</h6>
-                </div>
+                <div class="d-flex align-items-center mb-3" style="height: 32px;"><h6 class="text-secondary mb-0 text-uppercase small ls-1 fw-bold">Trajetória</h6></div>
                 <div class="table-responsive">
                   <table class="table table-sm table-hover text-center">
                     <thead><tr><th>Ano</th><th>Turma</th></tr></thead>
-                    <tbody>
-                      ${dados.trajetoria.map(t => `<tr><td>${t.ano}</td><td>${t.turma}</td></tr>`).join('')}
-                    </tbody>
+                    <tbody>${dados.trajetoria.map(t => `<tr><td>${t.ano}</td><td>${t.turma}</td></tr>`).join('')}</tbody>
                   </table>
                 </div>
               </div>
@@ -367,11 +421,8 @@
               <div class="col-md-8">
                  <div class="d-flex justify-content-between align-items-center mb-3" style="height: 32px;">
                     <h6 class="text-secondary mb-0 text-uppercase small ls-1 fw-bold">Situação Final</h6>
-                    <button onclick="window.copiarSituacao(this)" class="btn-action btn-sm">
-                      <i class="fas fa-copy"></i> Copiar
-                    </button>
+                    <button onclick="window.copiarSituacao(this)" class="btn-action btn-sm"><i class="fas fa-copy"></i> Copiar</button>
                  </div>
-                 
                  <div class="table-responsive">
                   <table class="table table-sm table-hover text-center align-middle">
                     <thead><tr><th>Ano</th><th>CH</th><th>Dias</th><th>Faltas</th><th>%</th><th>Res</th></tr></thead>
@@ -392,12 +443,7 @@
            <div class="mt-4 p-3 rounded" style="background-color: var(--background); border: 1px solid var(--outline-variant);">
               <div class="d-flex justify-content-between align-items-center mb-2">
                 <small class="text-secondary fw-bold text-uppercase">Observações</small>
-                
-                ${ temObs ? `
-                <button onclick="window.copiarObservacoes(this)" class="btn-action btn-sm">
-                   <i class="fas fa-copy"></i> Copiar
-                </button>` : '' }
-
+                ${ temObs ? `<button onclick="window.copiarObservacoes(this)" class="btn-action btn-sm"><i class="fas fa-copy"></i> Copiar</button>` : '' }
               </div>
               <ul class="mb-0 ps-3 small mt-2" style="color: var(--text-secondary)">
                 ${dados.trajetoria.map(t => t.existe && t.obs ? `<li><strong>${t.ano}:</strong> ${t.obs}</li>` : '').join('')}
@@ -405,7 +451,6 @@
             </div>
           </div>
         `;
-
         document.getElementById('resultadoArea').innerHTML = html;
         window.carregarTabelaNotas(dados.aluno, dados.oc, dados.trajetoria);
       };
@@ -413,8 +458,7 @@
       window.carregarTabelaNotas = function(aluno, oc, trajetoria) {
         const divNotas = document.getElementById('areaNotas');
         divNotas.innerHTML = '<div class="text-center mt-4"><div class="spinner-grow text-primary spinner-grow-sm"></div><span class="ms-3 small fw-bold text-secondary text-uppercase">Carregando notas</span></div>';
-
-        // CHAMADA API
+        
         chamarAPI('getTabelaNotas', { aluno: aluno, oc: oc, trajetoria: trajetoria })
           .then(tabela => {
              DADOS_NOTAS_ATUAL = tabela;
@@ -454,12 +498,15 @@
         document.getElementById('areaNotas').innerHTML = html;
       };
 
-      // --- CÓPIA (CLIPBOARD) ---
+      // =========================================================
+      // 7. FUNÇÕES DE CÓPIA
+      // =========================================================
       window.formatarCelula = function(valor, mesclagem) {
         if (!valor) valor = "-";
         const tabs = "\t".repeat(Math.max(0, mesclagem - 1));
         return valor + tabs;
       };
+      
       window.copiarNotas = function(btnElement) {
         if (!DADOS_NOTAS_ATUAL) return;
         const cfg = { notas: parseInt(document.getElementById('cfgNotas').value) || 3 };
@@ -473,6 +520,7 @@
         });
         window.executarCopiaReal(texto, btnElement);
       };
+      
       window.copiarSituacao = function(btnElement) {
         if (!DADOS_RELATORIO_ATUAL) return;
         const cfg = { situacao: parseInt(document.getElementById('cfgSituacao').value) || 9 };
@@ -489,28 +537,13 @@
         window.executarCopiaReal(texto, btnElement);
       };
       
-      // --- FUNÇÃO DE COPIAR OBSERVAÇÕES (ATUALIZADA) ---
       window.copiarObservacoes = function(btnElement) {
         if (!DADOS_RELATORIO_ATUAL) return;
-
-        // Filtra apenas anos que existem e têm observação preenchida
         const listaObs = DADOS_RELATORIO_ATUAL.trajetoria
           .filter(t => t.existe && t.obs && String(t.obs).trim() !== "")
-          .map(t => {
-            // ALTERAÇÃO: Retorna apenas o texto da observação.
-            // O ano foi removido.
-            return t.obs;
-          });
-
-        if (listaObs.length === 0) {
-          alert("Não há observações para copiar.");
-          return;
-        }
-
-        // Junta tudo com uma quebra de linha (\n)
-        // Isso preserva as quebras internas e adiciona uma quebra entre os anos
+          .map(t => t.obs); // Apenas o texto
+        if (listaObs.length === 0) { alert("Não há observações."); return; }
         const textoFinal = listaObs.join("\n");
-
         window.executarCopiaReal(textoFinal, btnElement);
       };
       
