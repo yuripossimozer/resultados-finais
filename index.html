@@ -2,7 +2,7 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>RESULTADOS FINAIS</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
@@ -29,7 +29,7 @@
 
           // Se tem token e ainda está no tempo válido
           if (token && lastActive && (agora - parseInt(lastActive) < timeout)) {
-             // Marca o HTML como "ativo". O CSS vai esconder o login imediatamente.
+             // Marca o HTML como "ativo"
              document.documentElement.setAttribute('data-session', 'active');
           }
         } catch(e) {}
@@ -56,8 +56,24 @@
       }
 
       /* --- RESET & ESTRUTURA --- */
-      html, body { width: 100%; min-height: 100vh; margin: 0; padding: 0; overflow-x: hidden; }
-      body { background-color: var(--background); color: var(--text-main); font-family: 'Roboto', sans-serif; transition: background-color 0.3s ease, color 0.3s ease; padding-bottom: 60px; -webkit-font-smoothing: antialiased; }
+      html, body { 
+          width: 100%; 
+          min-height: 100vh; 
+          margin: 0; 
+          padding: 0; 
+          overflow-x: hidden; /* Remove scroll horizontal global */
+          
+          /* NÃO usamos overscroll-behavior aqui para manter o pull-to-refresh */
+      }
+      
+      body { 
+          background-color: var(--background); 
+          color: var(--text-main); 
+          font-family: 'Roboto', sans-serif; 
+          transition: background-color 0.3s ease, color 0.3s ease; 
+          padding-bottom: 60px; 
+          -webkit-font-smoothing: antialiased; 
+      }
       
       /* --- COMPONENTES UI --- */
       #overlay-loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--background); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
@@ -104,23 +120,36 @@
       .header-style { background-color: var(--bg-header); color: var(--text-secondary); font-family: 'Roboto', sans-serif; font-weight: 600; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; border-bottom: 1px solid var(--outline-variant); padding: 12px; display: block; border-radius: 4px; }
    
       /* --- CONTROLE DE SESSÃO (ANTI-FLASH) --- */
-      html[data-session="active"] #login-screen {
-        display: none !important;
-      }
-      
-      html[data-session="active"] #overlay-loading {
-        display: flex !important; 
-      }
-      
-      html[data-session="active"] #app-container {
-        display: block !important;
+      html[data-session="active"] #login-screen { display: none !important; }
+      html[data-session="active"] #overlay-loading { display: flex !important; }
+      html[data-session="active"] #app-container { display: block !important; }
+
+      /* --- CORREÇÃO TELA DE LOGIN (MOBILE) --- */
+      #login-screen { 
+          position: fixed; 
+          top: 0; 
+          left: 0; 
+          width: 100%; 
+          
+          /* 1. Altura Dinâmica: Desconta barra de endereço do navegador */
+          height: 100dvh; 
+          
+          /* 2. Trava rolagem interna: Evita scrollbar no login */
+          overflow: hidden; 
+          
+          background: var(--background); 
+          z-index: 10000; 
+          display: flex; 
+          flex-direction: column; 
+          justify-content: center; 
+          align-items: center; 
       }
     
     </style>
   </head>
   <body>
     
-    <div id="login-screen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: var(--background); z-index: 10000; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+    <div id="login-screen">
       <div class="m-card p-5" style="border: 1px solid var(--outline-variant); max-width: 400px; width: 90%;">
         <div class="text-center mb-4">
            <i class="fas fa-graduation-cap fa-3x mb-3" style="color: var(--primary)"></i>
@@ -373,6 +402,7 @@
       // 3. INICIALIZAÇÃO (WINDOW.ONLOAD)
       // =========================================================
       window.onload = function() {
+        // 1. Apenas ajusta o ÍCONE (O tema visual já foi carregado no head)
         try {
           // Se o HTML já tem o tema dark, só garantimos que o ícone seja o Sol
           if (document.documentElement.getAttribute('data-theme') === 'dark') {
@@ -397,10 +427,7 @@
             .then(dados => {
               window.inicializarApp(dados);
               
-              // ===================================================
-              // A CORREÇÃO PRINCIPAL ESTÁ AQUI EMBAIXO:
               // Removemos a tag que força o loader, liberando a tela
-              // ===================================================
               document.documentElement.removeAttribute('data-session');
               
               document.getElementById('overlay-loading').style.display = 'none';
