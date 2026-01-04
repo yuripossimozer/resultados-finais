@@ -75,7 +75,7 @@
       .modal-header, .modal-footer { border-color: var(--outline-variant); }
       .btn-close { filter: invert(0.5); } [data-theme="dark"] .btn-close { filter: invert(1); }
 
-      /* --- CLASSE UTILITÁRIA DE CABEÇALHO (Para uso futuro) --- */
+      /* --- CLASSE UTILITÁRIA DE CABEÇALHO --- */
       .header-style { background-color: var(--bg-header); color: var(--text-secondary); font-family: 'Roboto', sans-serif; font-weight: 600; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; border-bottom: 1px solid var(--outline-variant); padding: 12px; display: block; border-radius: 4px; }
     </style>
   </head>
@@ -171,24 +171,75 @@
 
     <script>
       // =========================================================
-      // 1. CONFIGURAÇÃO DA API
+      // 1. CONFIGURAÇÃO DA API & SESSÃO
       // =========================================================
       const API_URL = "https://script.google.com/macros/s/AKfycbwjuwuIUaREmo34IOVa4tOC1xiKwLw9ADwFQfsuoVsGUDR03eyRdTmwlWJqMH9lltJnYQ/exec";
       
+      // Configuração de Sessão (25 minutos = 25 * 60 * 1000 ms)
+      const SESSAO_TIMEOUT_MS = 25 * 60 * 1000; 
+      const KEY_TOKEN = "appEscolar_token";
+      const KEY_LAST_ACTIVE = "appEscolar_lastActive";
+
       // ESTADO GLOBAL
       var USER_TOKEN = null;
       var DADOS_CACHE = {}; 
       var DADOS_RELATORIO_ATUAL = null; 
-      var DADOS_NOTAS_ATUAL = null;     
+      var DADOS_NOTAS_ATUAL = null; 
+      var TIMER_CHECK = null; // Timer de inatividade
 
       // =========================================================
-      // 2. AUTENTICAÇÃO E SEGURANÇA
+      // 2. AUTENTICAÇÃO E SESSÃO
       // =========================================================
       
+      function verificarSessaoSalva() {
+        const tokenSalvo = localStorage.getItem(KEY_TOKEN);
+        const lastActive = localStorage.getItem(KEY_LAST_ACTIVE);
+        const agora = Date.now();
+
+        if (tokenSalvo && lastActive) {
+          const tempoInativo = agora - parseInt(lastActive);
+          
+          if (tempoInativo < SESSAO_TIMEOUT_MS) {
+            // Sessão Válida
+            USER_TOKEN = tokenSalvo;
+            return true;
+          } else {
+            // Sessão Expirada
+            console.warn("Sessão expirada localmente.");
+            window.fazerLogout();
+            return false;
+          }
+        }
+        return false;
+      }
+
+      function atualizarAtividade() {
+        if(USER_TOKEN) localStorage.setItem(KEY_LAST_ACTIVE, Date.now());
+      }
+
+      function iniciarMonitoramentoInatividade() {
+        if (TIMER_CHECK) clearInterval(TIMER_CHECK);
+        // Checa a cada 1 minuto
+        TIMER_CHECK = setInterval(() => {
+          const lastActive = localStorage.getItem(KEY_LAST_ACTIVE);
+          if (lastActive) {
+            const tempoInativo = Date.now() - parseInt(lastActive);
+            if (tempoInativo >= SESSAO_TIMEOUT_MS) {
+              window.fazerLogout();
+              alert("Sua sessão expirou por inatividade.");
+            }
+          }
+        }, 60 * 1000); 
+      }
+
       // Callback do Google após Login com sucesso
       function handleCredentialResponse(response) {
         USER_TOKEN = response.credential;
         
+        // Salva Sessão
+        localStorage.setItem(KEY_TOKEN, USER_TOKEN);
+        localStorage.setItem(KEY_LAST_ACTIVE, Date.now());
+
         // Exibe email no modal
         const dadosUser = parseJwt(USER_TOKEN);
         if (dadosUser && dadosUser.email) {
@@ -205,12 +256,13 @@
             window.inicializarApp(dados);
             document.getElementById('overlay-loading').style.display = 'none';
             document.getElementById('app-container').style.display = 'block';
+            iniciarMonitoramentoInatividade();
           })
           .catch(e => {
             document.getElementById('overlay-loading').style.display = 'none';
             document.getElementById('login-screen').style.display = 'flex';
             document.getElementById('login-error').innerText = e.message; 
-            USER_TOKEN = null;
+            window.fazerLogout(); // Limpa se der erro
           });
       }
 
@@ -219,6 +271,11 @@
         USER_TOKEN = null;
         DADOS_CACHE = {}; DADOS_RELATORIO_ATUAL = null; DADOS_NOTAS_ATUAL = null;
         
+        // Limpa Sessão Local
+        localStorage.removeItem(KEY_TOKEN);
+        localStorage.removeItem(KEY_LAST_ACTIVE);
+        if (TIMER_CHECK) clearInterval(TIMER_CHECK);
+
         // Limpa UI
         document.getElementById('resultadoArea').innerHTML = '';
         document.getElementById('areaNotas').innerHTML = '';
@@ -241,6 +298,8 @@
 
       // Conector API Blindado (Envia Token Google)
       async function chamarAPI(action, payload = {}) {
+        atualizarAtividade(); // Renova sessão a cada clique
+        
         const bodyData = { 
           userToken: USER_TOKEN, 
           action: action, 
@@ -259,7 +318,7 @@
       }
 
       // =========================================================
-      // 3. INICIALIZAÇÃO
+      // 3. INICIALIZAÇÃO (WINDOW.ONLOAD)
       // =========================================================
       window.onload = function() {
         try {
@@ -272,7 +331,29 @@
           window.carregarConfig();
         } catch(e) {}
         
-        // NÃO chamamos mais dados aqui. O Login dispara o carregamento.
+        // --- TENTA RESTAURAR SESSÃO ---
+        if (verificarSessaoSalva()) {
+          // Sessão restaurada com sucesso
+          const dadosUser = parseJwt(USER_TOKEN);
+          if (dadosUser && dadosUser.email) {
+             document.getElementById('lblUserEmail').innerText = dadosUser.email;
+          }
+
+          document.getElementById('login-screen').style.display = 'none';
+          document.getElementById('overlay-loading').style.display = 'flex';
+          
+          chamarAPI('getHierarquiaDados')
+            .then(dados => {
+              window.inicializarApp(dados);
+              document.getElementById('overlay-loading').style.display = 'none';
+              document.getElementById('app-container').style.display = 'block';
+              iniciarMonitoramentoInatividade();
+            })
+            .catch(e => {
+              window.fazerLogout(); // Token pode ter expirado no Google
+            });
+        }
+        // Se não tiver sessão, fica na tela de login automaticamente.
       };
 
       // =========================================================
