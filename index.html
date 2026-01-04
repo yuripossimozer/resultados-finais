@@ -27,9 +27,7 @@
           const timeout = 25 * 60 * 1000; // 25 minutos
           const agora = Date.now();
 
-          // Se tem token e ainda está no tempo válido
           if (token && lastActive && (agora - parseInt(lastActive) < timeout)) {
-             // Marca o HTML como "ativo"
              document.documentElement.setAttribute('data-session', 'active');
           }
         } catch(e) {}
@@ -61,9 +59,7 @@
           min-height: 100vh; 
           margin: 0; 
           padding: 0; 
-          overflow-x: hidden; /* Remove scroll horizontal global */
-          
-          /* NÃO usamos overscroll-behavior aqui para manter o pull-to-refresh */
+          overflow-x: hidden; 
       }
       
       body { 
@@ -76,11 +72,10 @@
       }
       
       /* --- COMPONENTES UI --- */
-      #overlay-loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--background); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+      #overlay-loading { position: fixed; inset: 0; background: var(--background); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
       
       .app-bar { background-color: var(--surface-container); padding: 1rem 1.5rem; border-radius: 0 0 var(--radius-card) var(--radius-card); display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; border: 1px solid var(--outline-variant); border-top: none; }
       .app-title { font-weight: 700; color: var(--primary); font-size: 1.25rem; }
-      
       .m-card { background-color: var(--surface-container); border-radius: var(--radius-card); padding: 1.5rem; border: 1px solid var(--outline-variant); margin-bottom: 1.5rem; }
 
       /* --- TABELAS --- */
@@ -107,7 +102,6 @@
       
       /* --- ELEMENTOS DE TEXTO --- */
       .badge-pill { background-color: var(--primary-container); color: var(--on-primary-container); padding: 0.35em 1em; border-radius: 12px; font-size: 0.8rem; font-weight: 600; }
-      
       .meta-tag { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 8px; border: 1px solid var(--outline-variant); color: var(--text-secondary); font-size: 0.8rem; font-weight: 500; background-color: transparent; }
       .meta-tag i { color: var(--primary); font-size: 0.9rem; }
 
@@ -124,19 +118,20 @@
       html[data-session="active"] #overlay-loading { display: flex !important; }
       html[data-session="active"] #app-container { display: block !important; }
 
-      /* --- CORREÇÃO TELA DE LOGIN (MOBILE) --- */
+      /* --- CORREÇÃO FINAL TELA DE LOGIN (TRAVAMENTO TOTAL) --- */
       #login-screen { 
           position: fixed; 
-          top: 0; 
-          left: 0; 
+          /* INSET 0: Prende nos 4 cantos da tela */
+          inset: 0; 
           width: 100%; 
+          height: 100dvh; /* Altura exata da viewport visível */
           
-          /* 1. Altura Dinâmica: Desconta barra de endereço do navegador */
-          height: 100dvh; 
+          /* TOUCH-ACTION: NONE -> Desativa a rolagem por toque neste elemento */
+          touch-action: none; 
           
-          /* 2. Trava rolagem interna: Evita scrollbar no login */
           overflow: hidden; 
-          
+          overscroll-behavior: contain; 
+
           background: var(--background); 
           z-index: 10000; 
           display: flex; 
