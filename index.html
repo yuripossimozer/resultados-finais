@@ -54,15 +54,20 @@
       }
 
       /* --- RESET & ESTRUTURA --- */
-      html, body { 
+      html {
+        /* Importante para evitar scroll horizontal fantasma */
+        width: 100%;
+        overflow-x: hidden;
+      }
+
+      body { 
           width: 100%; 
-          min-height: 100vh; 
+          min-height: 100dvh; /* Garante altura total */
           margin: 0; 
           padding: 0; 
-          overflow-x: hidden; 
-      }
-      
-      body { 
+          
+          /* Removemos overscroll-behavior: none para permitir Refresh */
+          
           background-color: var(--background); 
           color: var(--text-main); 
           font-family: 'Roboto', sans-serif; 
@@ -118,20 +123,20 @@
       html[data-session="active"] #overlay-loading { display: flex !important; }
       html[data-session="active"] #app-container { display: block !important; }
 
-      /* --- CORREÇÃO FINAL TELA DE LOGIN (TRAVAMENTO TOTAL) --- */
+      /* --- TELA DE LOGIN (CORREÇÃO HÍBRIDA) --- */
       #login-screen { 
-          position: fixed; 
-          /* INSET 0: Prende nos 4 cantos da tela */
-          inset: 0; 
-          width: 100%; 
-          height: 100dvh; /* Altura exata da viewport visível */
+          position: fixed;
+          inset: 0;
+          width: 100%;
+          height: 100dvh; /* Altura exata da viewport */
           
-          /* TOUCH-ACTION: NONE -> Desativa a rolagem por toque neste elemento */
-          touch-action: none; 
+          /* O PULO DO GATO: Overflow auto permite que o navegador 
+             entenda que este é um container rolável, ativando 
+             o pull-to-refresh nativo, mesmo sem barra de scroll visível */
+          overflow-y: auto; 
           
-          overflow: hidden; 
-          overscroll-behavior: contain; 
-
+          /* Removemos touch-action: none para liberar o gesto */
+          
           background: var(--background); 
           z-index: 10000; 
           display: flex; 
@@ -397,7 +402,6 @@
       // 3. INICIALIZAÇÃO (WINDOW.ONLOAD)
       // =========================================================
       window.onload = function() {
-        // 1. Apenas ajusta o ÍCONE (O tema visual já foi carregado no head)
         try {
           // Se o HTML já tem o tema dark, só garantimos que o ícone seja o Sol
           if (document.documentElement.getAttribute('data-theme') === 'dark') {
