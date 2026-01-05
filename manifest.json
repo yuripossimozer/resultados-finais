@@ -4,7 +4,7 @@
   "start_url": "./index.html",
   "display": "minimal-ui",
   "background_color": "#fdfcff",
-  "theme_color": "#005fa4",
+  "theme_color": "#000",
   "orientation": "portrait",
   "scope": "./",
   "icons": [
