@@ -427,37 +427,84 @@
         return json;
       }
 
+      // --- FUNÇÕES AUXILIARES PARA ANIMAR A COR DA META TAG ---
+      
+      // Converte Hex (#RRGGBB) para objeto {r, g, b}
+      function hexToRgb(hex) {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+          r: parseInt(result[1], 16),
+          g: parseInt(result[2], 16),
+          b: parseInt(result[3], 16)
+        } : null;
+      }
+
+      // Converte objeto {r, g, b} de volta para Hex
+      function rgbToHex(r, g, b) {
+        return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+      }
+
+      // A Mágica: Interpolação Linear entre duas cores durante 'duration' ms
+      function animarMetaCor(corOrigem, corDestino, duration) {
+        const start = hexToRgb(corOrigem);
+        const end = hexToRgb(corDestino);
+        const metaTag = document.getElementById('meta-theme-color');
+        
+        if (!start || !end || !metaTag) return;
+
+        let startTime = null;
+
+        function animationStep(timestamp) {
+          if (!startTime) startTime = timestamp;
+          const progress = timestamp - startTime;
+          const percent = Math.min(progress / duration, 1); // Garante que não passe de 100%
+
+          // Calcula a cor intermediária baseada na porcentagem do tempo
+          const r = Math.round(start.r + (end.r - start.r) * percent);
+          const g = Math.round(start.g + (end.g - start.g) * percent);
+          const b = Math.round(start.b + (end.b - start.b) * percent);
+
+          metaTag.setAttribute('content', rgbToHex(r, g, b));
+
+          if (progress < duration) {
+            window.requestAnimationFrame(animationStep);
+          }
+        }
+
+        window.requestAnimationFrame(animationStep);
+      }
+
       window.toggleTheme = function() {
         const htmlTag = document.documentElement;
         const icon = document.getElementById('icon-theme');
-        const metaTheme = document.getElementById('meta-theme-color'); // Pega a meta tag
         
-        // Cores do fundo (Background) para parecer tela cheia
+        // Cores Definidas
         const COR_LIGHT = '#fdfcff';
         const COR_DARK = '#111315';
+        const TEMPO_ANIMACAO = 300; // 300ms (Igual ao CSS transition)
 
         const isDark = htmlTag.getAttribute('data-theme') === 'dark';
         
         if (isDark) {
-          // Mudar para CLARO
+          // --- MUDAR PARA CLARO ---
           htmlTag.removeAttribute('data-theme');
           if(icon) icon.classList.replace('fa-sun', 'fa-moon');
-          
-          // Muda a barra para a cor do fundo claro
-          if(metaTheme) metaTheme.setAttribute('content', COR_LIGHT); 
-          
           localStorage.setItem('theme', 'light');
+          
+          // Chama a animação: Do Escuro PARA O Claro
+          animarMetaCor(COR_DARK, COR_LIGHT, TEMPO_ANIMACAO);
+          
         } else {
-          // Mudar para ESCURO
+          // --- MUDAR PARA ESCURO ---
           htmlTag.setAttribute('data-theme', 'dark');
           if(icon) icon.classList.replace('fa-moon', 'fa-sun');
-          
-          // Muda a barra para a cor do fundo escuro
-          if(metaTheme) metaTheme.setAttribute('content', COR_DARK); 
-          
           localStorage.setItem('theme', 'dark');
+          
+          // Chama a animação: Do Claro PARA O Escuro
+          animarMetaCor(COR_LIGHT, COR_DARK, TEMPO_ANIMACAO);
         }
       };
+
 
       window.carregarConfig = function() { try { const raw = localStorage.getItem('appEscolarConfig'); const cfg = raw ? JSON.parse(raw) : null; if (cfg) { if(document.getElementById('cfgNotas')) document.getElementById('cfgNotas').value = cfg.notas; if(document.getElementById('cfgSituacao')) document.getElementById('cfgSituacao').value = cfg.situacao; } else { window.resetarConfig(); } } catch (e) { window.resetarConfig(); } };
       window.salvarConfig = function() { const config = { notas: parseInt(document.getElementById('cfgNotas').value) || 3, situacao: parseInt(document.getElementById('cfgSituacao').value) || 9 }; localStorage.setItem('appEscolarConfig', JSON.stringify(config)); };
