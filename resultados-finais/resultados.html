@@ -936,12 +936,6 @@
       });
     };
 
-      // Lógica do Master Checkbox (Cabeçalho)
-      const checked = document.querySelectorAll('.chk-row-item:checked');
-      const master = document.getElementById('chk-all-rows');
-      if(master) master.checked = (all.length === checked.length);
-    };
-
     window.copiarNotas = function(btnElement) { 
       // 1. Verificação de Segurança Inicial
       if (!DADOS_NOTAS_ATUAL) {
