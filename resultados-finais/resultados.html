@@ -888,48 +888,73 @@
     };
 
     window.copiarNotas = function(btnElement) { 
-      if (!DADOS_NOTAS_ATUAL) return; 
-      const cfg = { notas: parseInt(document.getElementById('cfgNotas').value) || 3 }; 
-      let texto = ""; 
-      
-      // 1. Identifica quais colunas (Anos) estão marcadas
-      const colunasMarcadas = Array.from(document.querySelectorAll('.chk-col-header')).map(chk => chk.checked);
-      
-      // 2. Itera sobre as linhas da tabela visual (para saber quais disciplinas estão marcadas)
-      const linhasDOM = document.querySelectorAll('#tabelaNotasMain tbody tr');
-      
-      linhasDOM.forEach((tr, index) => {
-        // Verifica se a checkbox dessa linha está marcada
-        const chkRow = tr.querySelector('.chk-row-item');
-        
-        if (chkRow && chkRow.checked) {
-          // Pega os dados originais do cache usando o índice
-          const dadosLinha = DADOS_NOTAS_ATUAL[index]; 
-          let linhaTexto = ""; 
-          
-          // Itera sobre os anos (colunas)
-          dadosLinha.anos.forEach((ano, idxAno) => { 
-            // Só adiciona se a coluna (Ano) estiver marcada no cabeçalho
-            if (colunasMarcadas[idxAno]) {
-               linhaTexto += window.formatarCelula(ano.nota, cfg.notas) + "\t" + 
-                             window.formatarCelula(ano.ch, cfg.notas) + "\t" + 
-                             window.formatarCelula(ano.falta, cfg.notas) + "\t"; 
-            }
-          }); 
-          
-          // Só adiciona a quebra de linha se houver conteúdo (alguma coluna marcada)
-          if (linhaTexto) {
-            texto += linhaTexto + "\n";
-          }
-        }
-      }); 
-      
-      if (texto === "") {
-        alert("Nenhum item selecionado para cópia.");
+      // 1. Verificação de Segurança Inicial
+      if (!DADOS_NOTAS_ATUAL) {
+        alert("Erro: Dados não carregados na memória.");
         return;
       }
 
-      window.executarCopiaReal(texto, btnElement); 
+      try {
+        // 2. Leitura Segura da Configuração
+        const inputCfg = document.getElementById('cfgNotas');
+        // Se o input estiver vazio ou inválido, força 3 tabs
+        const valorCfg = inputCfg ? parseInt(inputCfg.value) : 3;
+        const notasTabs = isNaN(valorCfg) ? 3 : valorCfg;
+        
+        let texto = ""; 
+        
+        // 3. Identifica quais colunas (Anos) estão marcadas
+        const colunasHeaders = document.querySelectorAll('.chk-col-header');
+        if (colunasHeaders.length === 0) throw new Error("Cabeçalhos de coluna não encontrados.");
+        const colunasMarcadas = Array.from(colunasHeaders).map(chk => chk.checked);
+        
+        // 4. Itera sobre as linhas da tabela visual
+        const linhasDOM = document.querySelectorAll('#tabelaNotasMain tbody tr');
+        
+        linhasDOM.forEach((tr) => {
+          // Verifica se a checkbox dessa linha está marcada
+          const chkRow = tr.querySelector('.chk-row-item');
+          
+          if (chkRow && chkRow.checked) {
+            // AQUI ESTÁ A CORREÇÃO DE SEGURANÇA:
+            // Usamos o atributo data-row-index para garantir que pegamos o dado certo
+            const idxDados = parseInt(chkRow.getAttribute('data-row-index'));
+            const dadosLinha = DADOS_NOTAS_ATUAL[idxDados]; 
+            
+            if (!dadosLinha) return; // Pula se não achar o dado (segurança)
+
+            let linhaTexto = ""; 
+            
+            // Itera sobre os anos (colunas)
+            if (dadosLinha.anos) {
+              dadosLinha.anos.forEach((ano, idxAno) => { 
+                // Só adiciona se a coluna (Ano) estiver marcada no cabeçalho
+                if (colunasMarcadas[idxAno]) {
+                   linhaTexto += window.formatarCelula(ano.nota, notasTabs) + "\t" + 
+                                 window.formatarCelula(ano.ch, notasTabs) + "\t" + 
+                                 window.formatarCelula(ano.falta, notasTabs) + "\t"; 
+                }
+              });
+            }
+            
+            // Só adiciona a quebra de linha se houver conteúdo
+            if (linhaTexto) {
+              texto += linhaTexto + "\n";
+            }
+          }
+        }); 
+        
+        if (texto === "") {
+          alert("Nenhum item selecionado para cópia.");
+          return;
+        }
+
+        window.executarCopiaReal(texto, btnElement); 
+
+      } catch (error) {
+        console.error(error);
+        alert("Erro ao processar cópia: " + error.message);
+      }
     };
 
     window.copiarSituacao = function(btnElement) { 
