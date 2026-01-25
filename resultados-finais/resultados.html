@@ -875,7 +875,7 @@
               </thead>
               <tbody>
                 ${tabela.map((linha, idx) => `
-                  <tr class="selected-row">
+                  <tr>
                     <td class="text-start fw-bold text-nowrap">
                       <label class="chk-container start">
                         <input type="checkbox" class="form-check-input chk-row-item" data-row-index="${idx}" checked onchange="window.verificarMasterCheckbox()">
@@ -891,35 +891,50 @@
       document.getElementById('areaNotas').innerHTML = html; 
     };
 
-    // Função 1: O "Selecionar Tudo" (Atualiza visual de TODAS as linhas)
+    // Função 1: Master Checkbox (Cabeçalho)
     window.toggleAllRows = function(masterChk) {
       const checkboxes = document.querySelectorAll('.chk-row-item');
       checkboxes.forEach(chk => {
         chk.checked = masterChk.checked;
-        
-        // Encontra a linha (TR) pai deste checkbox
         const tr = chk.closest('tr');
-        if (masterChk.checked) {
-          tr.classList.add('selected-row');
-        } else {
-          tr.classList.remove('selected-row');
-        }
+        
+        // REGRA NOVA:
+        // Se selecionou tudo (checked=true) -> Tabela limpa (sem cor)
+        // Se desmarcou tudo (checked=false) -> Tabela limpa (sem cor)
+        // Portanto, sempre removemos a classe ao usar o Master Checkbox
+        tr.classList.remove('selected-row');
       });
     };
 
-    // Função 2: Verifica individualmente (Atualiza visual da linha CLICADA)
+    // Função 2: Checkbox Individual (A Inteligência está aqui)
     window.verificarMasterCheckbox = function() {
       const all = document.querySelectorAll('.chk-row-item');
+      const checked = document.querySelectorAll('.chk-row-item:checked');
       
-      // Atualiza o visual de cada linha baseada em seu checkbox
+      // Verifica se a seleção está completa
+      const isCompleta = (all.length === checked.length);
+
+      // Atualiza o Master Checkbox do cabeçalho
+      const master = document.getElementById('chk-all-rows');
+      if(master) master.checked = isCompleta;
+
+      // Lógica Visual Condicional
       all.forEach(chk => {
          const tr = chk.closest('tr');
-         if (chk.checked) {
-           tr.classList.add('selected-row');
-         } else {
+         
+         if (isCompleta) {
+           // CENÁRIO A: Tudo selecionado -> Visual Limpo (Ninguém ganha cor)
            tr.classList.remove('selected-row');
+         } else {
+           // CENÁRIO B: Seleção Parcial -> Destaca quem vai ser copiado
+           if (chk.checked) {
+             tr.classList.add('selected-row');
+           } else {
+             tr.classList.remove('selected-row');
+           }
          }
       });
+    };
 
       // Lógica do Master Checkbox (Cabeçalho)
       const checked = document.querySelectorAll('.chk-row-item:checked');
