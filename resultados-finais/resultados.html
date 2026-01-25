@@ -822,6 +822,15 @@
     // LÓGICA DE SELEÇÃO E CÓPIA (ATUALIZADO)
     // =========================================================
 
+    // Função auxiliar para formatar células com Tabs
+    window.formatarCelula = function(valor, mesclagem) { 
+      if (!valor) valor = "-"; 
+      // Garante que mesclagem seja pelo menos 1
+      const qtdTabs = Math.max(0, (mesclagem || 1) - 1);
+      const tabs = "\t".repeat(qtdTabs); 
+      return valor + tabs; 
+    };
+    
     window.renderizarTabelaFinal = function(tabela, trajetoria) { 
       let html = `
         <div class="m-card">
