@@ -175,7 +175,8 @@
       border: none; border-radius: var(--radius-btn);
       padding: 0.5rem 1.2rem; font-weight: 500;
       display: inline-flex; align-items: center; gap: 8px;
-      box-shadow: var(--shadow-sm); transition: 0.2s;
+      box-shadow: var(--shadow-sm); transition: transform 0.2s, box-shadow 0.2s, filter 0.2s;
+
     }
     .btn-action:hover { filter: brightness(1.1); transform: translateY(-1px); box-shadow: var(--shadow-md); }
     .btn-action.success-state { background-color: var(--success) !important; color: var(--on-success) !important; pointer-events: none; }
@@ -891,21 +892,36 @@
     // LÓGICA DE VISUALIZAÇÃO E CONTROLE (MATRIZ UNIFICADA)
     // =========================================================
 
-    // Variável para evitar chamadas duplicadas no mesmo frame
+    // Variável para o agendamento visual da tabela
     let frameVisualUpdate = null;
 
     window.atualizarVisualMatriz = function() {
-      // Se já tiver uma atualização agendada, cancela a anterior (evita trabalho dobrado)
-      if (frameVisualUpdate) cancelAnimationFrame(frameVisualUpdate);
+      // --- PARTE 1: Lógica Instantânea (Botão e Checkbox Master) ---
+      // Executa AGORA, sem esperar o próximo frame
+      
+      const colHeaders = document.querySelectorAll('.chk-col-header');
+      const rowChecks = document.querySelectorAll('.chk-row-item');
+      
+      // Leitura rápida para decisão do botão
+      // (Usamos Array.from.some para ser mais rápido que contar tudo se não precisar)
+      const temCol = Array.from(colHeaders).some(c => c.checked);
+      const temRow = Array.from(rowChecks).some(r => r.checked);
+      const temDadosParaCopiar = (temCol && temRow);
 
-      // Agenda a atualização para o próximo "respiro" do navegador
+      const btn = document.getElementById('btnCopiarNotas');
+      
+      // Atualiza visibilidade IMEDIATAMENTE
+      if (btn) {
+         btn.style.visibility = temDadosParaCopiar ? 'visible' : 'hidden';
+      }
+
+      // --- PARTE 2: Lógica Pesada (Pintar a Tabela) ---
+      // Agenda para o próximo frame para não travar o clique
+      
+      if (frameVisualUpdate) cancelAnimationFrame(frameVisualUpdate);
+      
       frameVisualUpdate = requestAnimationFrame(() => {
-        
-        // 1. Coleta estados (Leitura do DOM)
-        const colHeaders = document.querySelectorAll('.chk-col-header');
-        const rowChecks = document.querySelectorAll('.chk-row-item');
-        
-        // Otimização: Usar Array.from para evitar querySelectorAll repetido
+        // Recalcula contagens exatas para saber se é Full ou Seleção
         const mapaCols = Array.from(colHeaders).map(chk => chk.checked);
         const mapaRows = Array.from(rowChecks).map(chk => chk.checked);
 
@@ -915,48 +931,30 @@
         const isTodasCols = (colHeaders.length === qtdColsChecked);
         const isTodasRows = (rowChecks.length === qtdRowsChecked);
         const isTudoFull = (isTodasCols && isTodasRows);
-        
-        const temDadosParaCopiar = (qtdColsChecked > 0 && qtdRowsChecked > 0);
 
-        // 2. Atualiza Botão (Escrita no DOM)
-        const btn = document.getElementById('btnCopiarNotas');
-        if (btn) {
-          if (temDadosParaCopiar) {
-             btn.style.visibility = 'visible'; 
-             // Só altera o HTML se o texto realmente mudou (evita repaint desnecessário)
+        // Atualiza Texto do Botão (sem mexer na visibilidade que já foi tratada)
+        if (btn && temDadosParaCopiar) {
              const novoTexto = isTudoFull ? '<i class="fas fa-copy"></i> Copiar' : '<i class="fas fa-copy"></i> Copiar Seleção';
              if (btn.innerHTML !== novoTexto) btn.innerHTML = novoTexto;
-          } else {
-             btn.style.visibility = 'hidden';
-          }
         }
 
-        // 3. Atualiza Master Checkbox
+        // Atualiza Master Checkbox
         const master = document.getElementById('chk-all-rows');
         if (master) master.checked = isTodasRows;
 
-        // 4. APLICA AS CORES (Batch Update)
-        // Aqui está o segredo: só mexemos nas classes se realmente precisar
+        // Pinta a Tabela (Batch Update)
         rowChecks.forEach((chk, idxRow) => {
           const tr = chk.closest('tr');
           const isRowAtiva = mapaRows[idxRow];
+          const cells = tr.children; 
           
-          // Seleciona apenas as células de dados dessa linha
-          const cells = tr.children; // Mais rápido que querySelectorAll
-          
-          // Começamos do índice 1 porque o 0 é o nome da disciplina
           for (let i = 1; i < cells.length; i++) {
              const td = cells[i];
-             // Recupera o índice do ano (guardado no dataset)
              const anoIdx = parseInt(td.getAttribute('data-year-idx'));
-             
-             // Se não tiver o atributo (ex: célula vazia ou erro), ignora
              if (isNaN(anoIdx)) continue;
 
              const isColAtiva = mapaCols[anoIdx];
              const devePintar = (!isTudoFull && isRowAtiva && isColAtiva);
-
-             // Só toca no DOM se o estado mudar
              const jaTemClasse = td.classList.contains('highlight-cell');
              
              if (devePintar && !jaTemClasse) {
@@ -966,8 +964,7 @@
              }
           }
         });
-        
-        frameVisualUpdate = null; // Limpa o frame
+        frameVisualUpdate = null;
       });
     };
 
