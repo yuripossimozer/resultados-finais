@@ -175,7 +175,8 @@
       border: none; border-radius: var(--radius-btn);
       padding: 0.5rem 1.2rem; font-weight: 500;
       display: inline-flex; align-items: center; gap: 8px;
-      box-shadow: var(--shadow-sm); transition: 0.2s;
+      box-shadow: var(--shadow-sm); transition: transform 0.2s, box-shadow 0.2s, filter 0.2s;
+
     }
     .btn-action:hover { filter: brightness(1.1); transform: translateY(-1px); box-shadow: var(--shadow-md); }
     .btn-action.success-state { background-color: var(--success) !important; color: var(--on-success) !important; pointer-events: none; }
@@ -224,16 +225,12 @@
       border-color: var(--primary);
     }
     
-    /* --- DESTAQUE DE LINHA SELECIONADA (CORRIGIDO) --- */
-    /* Aumentamos a especificidade para vencer o background transparent !important */
-    .table tbody tr.selected-row > td {
+    /* --- DESTAQUE DE CÉLULA (MATRIZ DINÂMICA) --- */
+    /* A classe agora é aplicada no TD, não mais no TR */
+    .table tbody td.highlight-cell {
       background-color: var(--primary-container) !important;
       color: var(--on-primary-container) !important;
       transition: background-color 0.2s;
-    }
-    
-    /* Pequeno ajuste para manter a cor da borda sutil */
-    .table tbody tr.selected-row > td {
       border-bottom-color: rgba(255,255,255,0.1) !important;
     }
 
@@ -842,30 +839,6 @@
       const qtdTabs = Math.max(0, (mesclagem || 1) - 1);
       const tabs = "\t".repeat(qtdTabs); 
       return valor + tabs; 
-    };
-
-    // Função Auxiliar: Atualiza o texto do botão Copiar
-    window.atualizarTextoBotao = function() {
-      const btn = document.getElementById('btnCopiarNotas');
-      if (!btn) return;
-
-      // Conta colunas
-      const allCols = document.querySelectorAll('.chk-col-header');
-      const checkedCols = document.querySelectorAll('.chk-col-header:checked');
-      const colsCompleto = (allCols.length === checkedCols.length);
-
-      // Conta linhas
-      const allRows = document.querySelectorAll('.chk-row-item');
-      const checkedRows = document.querySelectorAll('.chk-row-item:checked');
-      const rowsCompleto = (allRows.length === checkedRows.length);
-
-      // Se TUDO estiver marcado (Linhas E Colunas) -> "Copiar"
-      // Se qualquer coisa faltar -> "Copiar Seleção"
-      if (colsCompleto && rowsCompleto) {
-        btn.innerHTML = '<i class="fas fa-copy"></i> Copiar';
-      } else {
-        btn.innerHTML = '<i class="fas fa-copy"></i> Copiar Seleção';
-      }
     };    
     
     window.renderizarTabelaFinal = function(tabela, trajetoria) { 
@@ -888,7 +861,7 @@
                   ${trajetoria.map((t, index) => `
                     <th colspan="3" class="${t.existe ? '' : 'text-muted'}">
                       <label class="chk-container" style="cursor: pointer;">
-                        <input type="checkbox" class="form-check-input chk-col-header" data-col-index="${index}" checked onchange="window.atualizarTextoBotao()">
+                        <input type="checkbox" class="form-check-input chk-col-header" data-col-index="${index}" checked onchange="window.atualizarVisualMatriz()">
                         <span>${t.existe ? t.turma : t.ano}</span>
                       </label>
                     </th>`).join('')}
@@ -906,7 +879,7 @@
                         <span>${linha.disciplina}</span>
                       </label>
                     </td>
-                    ${linha.anos.map(ano => `<td>${ano.nota}</td><td>${ano.ch}</td><td>${ano.falta}</td>`).join('')}
+                    ${linha.anos.map((ano, idxAno) => `<td data-year-idx="${idxAno}">${ano.nota}</td><td data-year-idx="${idxAno}">${ano.ch}</td><td data-year-idx="${idxAno}">${ano.falta}</td>`).join('')}
                   </tr>`).join('')}
               </tbody>
             </table>
@@ -915,44 +888,96 @@
       document.getElementById('areaNotas').innerHTML = html; 
     };
 
-    // Função 1: Master Checkbox (Cabeçalho)
-    window.toggleAllRows = function(masterChk) {
-      const checkboxes = document.querySelectorAll('.chk-row-item');
-      checkboxes.forEach(chk => {
-        chk.checked = masterChk.checked;
-        const tr = chk.closest('tr');
-        tr.classList.remove('selected-row'); // Sempre limpa visual ao usar Master
-      });
+    // =========================================================
+    // LÓGICA DE VISUALIZAÇÃO E CONTROLE (MATRIZ UNIFICADA)
+    // =========================================================
+
+    // Variável para o agendamento visual da tabela
+    let frameVisualUpdate = null;
+
+    window.atualizarVisualMatriz = function() {
+      // --- PARTE 1: Lógica Instantânea (Botão e Checkbox Master) ---
+      // Executa AGORA, sem esperar o próximo frame
       
-      // ATUALIZA O BOTÃO
-      window.atualizarTextoBotao();
+      const colHeaders = document.querySelectorAll('.chk-col-header');
+      const rowChecks = document.querySelectorAll('.chk-row-item');
+      
+      // Leitura rápida para decisão do botão
+      // (Usamos Array.from.some para ser mais rápido que contar tudo se não precisar)
+      const temCol = Array.from(colHeaders).some(c => c.checked);
+      const temRow = Array.from(rowChecks).some(r => r.checked);
+      const temDadosParaCopiar = (temCol && temRow);
+
+      const btn = document.getElementById('btnCopiarNotas');
+      
+      // Atualiza visibilidade IMEDIATAMENTE
+      if (btn) {
+         btn.style.visibility = temDadosParaCopiar ? 'visible' : 'hidden';
+      }
+
+      // --- PARTE 2: Lógica Pesada (Pintar a Tabela) ---
+      // Agenda para o próximo frame para não travar o clique
+      
+      if (frameVisualUpdate) cancelAnimationFrame(frameVisualUpdate);
+      
+      frameVisualUpdate = requestAnimationFrame(() => {
+        // Recalcula contagens exatas para saber se é Full ou Seleção
+        const mapaCols = Array.from(colHeaders).map(chk => chk.checked);
+        const mapaRows = Array.from(rowChecks).map(chk => chk.checked);
+
+        const qtdColsChecked = mapaCols.filter(Boolean).length;
+        const qtdRowsChecked = mapaRows.filter(Boolean).length;
+
+        const isTodasCols = (colHeaders.length === qtdColsChecked);
+        const isTodasRows = (rowChecks.length === qtdRowsChecked);
+        const isTudoFull = (isTodasCols && isTodasRows);
+
+        // Atualiza Texto do Botão (sem mexer na visibilidade que já foi tratada)
+        if (btn && temDadosParaCopiar) {
+             const novoTexto = isTudoFull ? '<i class="fas fa-copy"></i> Copiar' : '<i class="fas fa-copy"></i> Copiar Seleção';
+             if (btn.innerHTML !== novoTexto) btn.innerHTML = novoTexto;
+        }
+
+        // Atualiza Master Checkbox
+        const master = document.getElementById('chk-all-rows');
+        if (master) master.checked = isTodasRows;
+
+        // Pinta a Tabela (Batch Update)
+        rowChecks.forEach((chk, idxRow) => {
+          const tr = chk.closest('tr');
+          const isRowAtiva = mapaRows[idxRow];
+          const cells = tr.children; 
+          
+          for (let i = 1; i < cells.length; i++) {
+             const td = cells[i];
+             const anoIdx = parseInt(td.getAttribute('data-year-idx'));
+             if (isNaN(anoIdx)) continue;
+
+             const isColAtiva = mapaCols[anoIdx];
+             const devePintar = (!isTudoFull && isRowAtiva && isColAtiva);
+             const jaTemClasse = td.classList.contains('highlight-cell');
+             
+             if (devePintar && !jaTemClasse) {
+               td.classList.add('highlight-cell');
+             } else if (!devePintar && jaTemClasse) {
+               td.classList.remove('highlight-cell');
+             }
+          }
+        });
+        frameVisualUpdate = null;
+      });
     };
 
-    // Função 2: Checkbox Individual
+    // Função Wrapper 1: Master Checkbox
+    window.toggleAllRows = function(masterChk) {
+      const checkboxes = document.querySelectorAll('.chk-row-item');
+      checkboxes.forEach(chk => chk.checked = masterChk.checked);
+      window.atualizarVisualMatriz(); // Chama a central
+    };
+
+    // Função Wrapper 2: Checkbox Individual
     window.verificarMasterCheckbox = function() {
-      const all = document.querySelectorAll('.chk-row-item');
-      const checked = document.querySelectorAll('.chk-row-item:checked');
-      
-      const isCompleta = (all.length === checked.length);
-
-      const master = document.getElementById('chk-all-rows');
-      if(master) master.checked = isCompleta;
-
-      all.forEach(chk => {
-         const tr = chk.closest('tr');
-         if (isCompleta) {
-           tr.classList.remove('selected-row');
-         } else {
-           if (chk.checked) {
-             tr.classList.add('selected-row');
-           } else {
-             tr.classList.remove('selected-row');
-           }
-         }
-      });
-
-      // ATUALIZA O BOTÃO
-      window.atualizarTextoBotao();
+      window.atualizarVisualMatriz(); // Chama a central
     };
 
     window.copiarNotas = function(btnElement) { 
