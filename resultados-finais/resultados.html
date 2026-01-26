@@ -202,6 +202,41 @@
     .btn-close { filter: invert(0.5); } 
     [data-theme="dark"] .btn-close { filter: invert(1); }
 
+    /* --- CHECKBOXES DA TABELA --- */
+    .chk-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      justify-content: center; /* Centraliza no cabeçalho */
+    }
+    .chk-container.start {
+      justify-content: flex-start; /* Alinha a esquerda nas disciplinas */
+    }
+    .table .form-check-input {
+      margin: 0;
+      cursor: pointer;
+      width: 1.1em;
+      height: 1.1em;
+      border: 1px solid var(--outline);
+    }
+    .table .form-check-input:checked {
+      background-color: var(--primary);
+      border-color: var(--primary);
+    }
+    
+    /* --- DESTAQUE DE LINHA SELECIONADA (CORRIGIDO) --- */
+    /* Aumentamos a especificidade para vencer o background transparent !important */
+    .table tbody tr.selected-row > td {
+      background-color: var(--primary-container) !important;
+      color: var(--on-primary-container) !important;
+      transition: background-color 0.2s;
+    }
+    
+    /* Pequeno ajuste para manter a cor da borda sutil */
+    .table tbody tr.selected-row > td {
+      border-bottom-color: rgba(255,255,255,0.1) !important;
+    }
+
     /* =========================================
        TELAS DE LOGIN E LOADING
        ========================================= */
@@ -796,28 +831,81 @@
         .catch(e => divNotas.innerHTML = `<div class="alert alert-danger">Erro Notas: ${e.message}</div>`); 
     };
 
+    // =========================================================
+    // LÓGICA DE SELEÇÃO E CÓPIA (ATUALIZADO)
+    // =========================================================
+
+    // Função auxiliar para formatar células com Tabs
+    window.formatarCelula = function(valor, mesclagem) { 
+      if (!valor) valor = "-"; 
+      // Garante que mesclagem seja pelo menos 1
+      const qtdTabs = Math.max(0, (mesclagem || 1) - 1);
+      const tabs = "\t".repeat(qtdTabs); 
+      return valor + tabs; 
+    };
+
+    // Função Auxiliar: Atualiza o texto do botão Copiar
+    window.atualizarTextoBotao = function() {
+      const btn = document.getElementById('btnCopiarNotas');
+      if (!btn) return;
+
+      // Conta colunas
+      const allCols = document.querySelectorAll('.chk-col-header');
+      const checkedCols = document.querySelectorAll('.chk-col-header:checked');
+      const colsCompleto = (allCols.length === checkedCols.length);
+
+      // Conta linhas
+      const allRows = document.querySelectorAll('.chk-row-item');
+      const checkedRows = document.querySelectorAll('.chk-row-item:checked');
+      const rowsCompleto = (allRows.length === checkedRows.length);
+
+      // Se TUDO estiver marcado (Linhas E Colunas) -> "Copiar"
+      // Se qualquer coisa faltar -> "Copiar Seleção"
+      if (colsCompleto && rowsCompleto) {
+        btn.innerHTML = '<i class="fas fa-copy"></i> Copiar';
+      } else {
+        btn.innerHTML = '<i class="fas fa-copy"></i> Copiar Seleção';
+      }
+    };    
+    
     window.renderizarTabelaFinal = function(tabela, trajetoria) { 
       let html = `
         <div class="m-card">
           <div class="d-flex justify-content-between align-items-center mb-3">
             <h6 class="text-secondary mb-0 text-uppercase small ls-1 fw-bold">APROVEITAMENTO</h6>
-            <button onclick="window.copiarNotas(this)" class="btn-action btn-sm"><i class="fas fa-copy"></i> Copiar</button>
+            <button id="btnCopiarNotas" onclick="window.copiarNotas(this)" class="btn-action btn-sm"><i class="fas fa-copy"></i> Copiar</button>
           </div>
           <div class="table-responsive">
-            <table class="table table-hover table-bordered text-center align-middle" style="font-size: 0.85rem;">
+            <table class="table table-hover table-bordered text-center align-middle" style="font-size: 0.85rem;" id="tabelaNotasMain">
               <thead>
                 <tr>
-                  <th rowspan="2" class="align-middle">DISCIPLINA</th>
-                  ${trajetoria.map(t => `<th colspan="3" class="${t.existe ? '' : 'text-muted'}">${t.existe ? t.turma : t.ano}</th>`).join('')}
+                  <th rowspan="2" class="align-middle">
+                    <label class="chk-container start" style="cursor: pointer;">
+                       <input type="checkbox" class="form-check-input" id="chk-all-rows" checked onchange="window.toggleAllRows(this)">
+                       <span>DISCIPLINA</span>
+                    </label>
+                  </th>
+                  ${trajetoria.map((t, index) => `
+                    <th colspan="3" class="${t.existe ? '' : 'text-muted'}">
+                      <label class="chk-container" style="cursor: pointer;">
+                        <input type="checkbox" class="form-check-input chk-col-header" data-col-index="${index}" checked onchange="window.atualizarTextoBotao()">
+                        <span>${t.existe ? t.turma : t.ano}</span>
+                      </label>
+                    </th>`).join('')}
                 </tr>
                 <tr>
                   ${trajetoria.map(() => `<th class="text-secondary small">PTS</th><th class="text-secondary small">CH</th><th class="text-secondary small">FT</th>`).join('')}
                 </tr>
               </thead>
               <tbody>
-                ${tabela.map(linha => `
+                ${tabela.map((linha, idx) => `
                   <tr>
-                    <td class="text-start fw-bold text-nowrap">${linha.disciplina}</td>
+                    <td class="text-start fw-bold text-nowrap">
+                      <label class="chk-container start" style="cursor: pointer;">
+                        <input type="checkbox" class="form-check-input chk-row-item" data-row-index="${idx}" checked onchange="window.verificarMasterCheckbox()">
+                        <span>${linha.disciplina}</span>
+                      </label>
+                    </td>
                     ${linha.anos.map(ano => `<td>${ano.nota}</td><td>${ano.ch}</td><td>${ano.falta}</td>`).join('')}
                   </tr>`).join('')}
               </tbody>
@@ -827,31 +915,114 @@
       document.getElementById('areaNotas').innerHTML = html; 
     };
 
-    // =========================================================
-    // 7. FUNÇÕES DE CÓPIA (CLIPBOARD)
-    // =========================================================
-    window.formatarCelula = function(valor, mesclagem) { 
-      if (!valor) valor = "-"; 
-      const tabs = "\t".repeat(Math.max(0, mesclagem - 1)); 
-      return valor + tabs; 
+    // Função 1: Master Checkbox (Cabeçalho)
+    window.toggleAllRows = function(masterChk) {
+      const checkboxes = document.querySelectorAll('.chk-row-item');
+      checkboxes.forEach(chk => {
+        chk.checked = masterChk.checked;
+        const tr = chk.closest('tr');
+        tr.classList.remove('selected-row'); // Sempre limpa visual ao usar Master
+      });
+      
+      // ATUALIZA O BOTÃO
+      window.atualizarTextoBotao();
+    };
+
+    // Função 2: Checkbox Individual
+    window.verificarMasterCheckbox = function() {
+      const all = document.querySelectorAll('.chk-row-item');
+      const checked = document.querySelectorAll('.chk-row-item:checked');
+      
+      const isCompleta = (all.length === checked.length);
+
+      const master = document.getElementById('chk-all-rows');
+      if(master) master.checked = isCompleta;
+
+      all.forEach(chk => {
+         const tr = chk.closest('tr');
+         if (isCompleta) {
+           tr.classList.remove('selected-row');
+         } else {
+           if (chk.checked) {
+             tr.classList.add('selected-row');
+           } else {
+             tr.classList.remove('selected-row');
+           }
+         }
+      });
+
+      // ATUALIZA O BOTÃO
+      window.atualizarTextoBotao();
     };
 
     window.copiarNotas = function(btnElement) { 
-      if (!DADOS_NOTAS_ATUAL) return; 
-      const cfg = { notas: parseInt(document.getElementById('cfgNotas').value) || 3 }; 
-      let texto = ""; 
-      
-      DADOS_NOTAS_ATUAL.forEach(linha => { 
-        let linhaTexto = ""; 
-        linha.anos.forEach(ano => { 
-          linhaTexto += window.formatarCelula(ano.nota, cfg.notas) + "\t" + 
-                        window.formatarCelula(ano.ch, cfg.notas) + "\t" + 
-                        window.formatarCelula(ano.falta, cfg.notas) + "\t"; 
+      // 1. Verificação de Segurança Inicial
+      if (!DADOS_NOTAS_ATUAL) {
+        alert("Erro: Dados não carregados na memória.");
+        return;
+      }
+
+      try {
+        // 2. Leitura Segura da Configuração
+        const inputCfg = document.getElementById('cfgNotas');
+        // Se o input estiver vazio ou inválido, força 3 tabs
+        const valorCfg = inputCfg ? parseInt(inputCfg.value) : 3;
+        const notasTabs = isNaN(valorCfg) ? 3 : valorCfg;
+        
+        let texto = ""; 
+        
+        // 3. Identifica quais colunas (Anos) estão marcadas
+        const colunasHeaders = document.querySelectorAll('.chk-col-header');
+        if (colunasHeaders.length === 0) throw new Error("Cabeçalhos de coluna não encontrados.");
+        const colunasMarcadas = Array.from(colunasHeaders).map(chk => chk.checked);
+        
+        // 4. Itera sobre as linhas da tabela visual
+        const linhasDOM = document.querySelectorAll('#tabelaNotasMain tbody tr');
+        
+        linhasDOM.forEach((tr) => {
+          // Verifica se a checkbox dessa linha está marcada
+          const chkRow = tr.querySelector('.chk-row-item');
+          
+          if (chkRow && chkRow.checked) {
+            // AQUI ESTÁ A CORREÇÃO DE SEGURANÇA:
+            // Usamos o atributo data-row-index para garantir que pegamos o dado certo
+            const idxDados = parseInt(chkRow.getAttribute('data-row-index'));
+            const dadosLinha = DADOS_NOTAS_ATUAL[idxDados]; 
+            
+            if (!dadosLinha) return; // Pula se não achar o dado (segurança)
+
+            let linhaTexto = ""; 
+            
+            // Itera sobre os anos (colunas)
+            if (dadosLinha.anos) {
+              dadosLinha.anos.forEach((ano, idxAno) => { 
+    // Segurança: Verifica se existe checkbox para esse índice
+    if (colunasMarcadas[idxAno] !== undefined && colunasMarcadas[idxAno] === true) {
+                   linhaTexto += window.formatarCelula(ano.nota, notasTabs) + "\t" + 
+                                 window.formatarCelula(ano.ch, notasTabs) + "\t" + 
+                                 window.formatarCelula(ano.falta, notasTabs) + "\t"; 
+                }
+              });
+            }
+            
+            // Só adiciona a quebra de linha se houver conteúdo
+            if (linhaTexto) {
+              texto += linhaTexto + "\n";
+            }
+          }
         }); 
-        texto += linhaTexto + "\n"; 
-      }); 
-      
-      window.executarCopiaReal(texto, btnElement); 
+        
+        if (texto === "") {
+          alert("Nenhum item selecionado para cópia.");
+          return;
+        }
+
+        window.executarCopiaReal(texto, btnElement); 
+
+      } catch (error) {
+        console.error(error);
+        alert("Erro ao processar cópia: " + error.message);
+      }
     };
 
     window.copiarSituacao = function(btnElement) { 
